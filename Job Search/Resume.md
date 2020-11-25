@@ -34,8 +34,8 @@ Signer Tech (Hyderabad, India) 05/2018 - 06/2018
 
 - Extracted tweets using the GOT( get old tweets) model and created SVM, Random Forest and Naive Bayes models to analyze the sentiment of the tweets and picked the best one to perform sentiment analysis.
 
-| **AI Rest Services using Open API** ​ | 09/2019 - 12/2019 |
-| --- | --- |
+| **AI Rest Services using Open API** | 09/2019 - 12/2019 
+| --- |
 
 - Worked on a REST-based AI-service to implement simple logistic regression on AWS and Google Cloud Platform and managed them using Cloudmesh.
 
