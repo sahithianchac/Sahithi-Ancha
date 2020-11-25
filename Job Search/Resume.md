@@ -9,7 +9,7 @@
 
 ## **EMPLOYMENT HISTORY**
 
-Office of the Vice President for Communications and Marketing, Indiana University  09/2020 - Present
+### Office of the Vice President for Communications and Marketing, Indiana University  09/2020 - Present
 **Marketing Data Analyst**
 
 - Support the usage of Salesforce Marketing Cloud through audience segmentation and campaign management and translate plain language requests into reports from CRM and SQL queries.
@@ -24,36 +24,21 @@ Signer Tech (Hyderabad, India) 05/2018 - 06/2018
 
 - Worked on implementing SCD Type-2 using Hadoop Data Vault Modelling Techniques to improve the performance of analytical processes and for faster processing of bulky datasets.
 
-![](RackMultipart20201125-4-j2stgb_html_d052ea2f3dd9ffd6.png)
+## **ACADEMIC PROJECTS** 
 
-| **ACADEMIC PROJECTS** | ​01/2020 - 05/2020 |
- |
-| --- | --- | --- |
-| **Analysis Of The Sentiment Surrounding The Citizenship Amendment Bill In India** |
- |
-
+**Analysis Of The Sentiment Surrounding The Citizenship Amendment Bill In India** 01/2020 - 05/2020 
 - Extracted tweets using the GOT( get old tweets) model and created SVM, Random Forest and Naive Bayes models to analyze the sentiment of the tweets and picked the best one to perform sentiment analysis.
 
-| **AI Rest Services using Open API** | 09/2019 - 12/2019 
-| --- |
-
+**AI Rest Services using Open API** 09/2019 - 12/2019 
 - Worked on a REST-based AI-service to implement simple logistic regression on AWS and Google Cloud Platform and managed them using Cloudmesh.
 
-| **Image Segregation** | 09/2019 - 12/2019 |
-| --- | --- |
-
+**Image Segregation** 09/2019 - 12/2019 
 - Developed an automated solution that segregates images in our phone&#39;s gallery into four categories as people (friends/family or strangers) and text or memes to make deleting unwanted images from our gallery, a much easier task.
 
-**PAPER - &quot;An Innovative Model-Based Approach for Credit Card Fraud Detection Using Predictive Analysis**
-
-| **and Logical Regression&quot;, IJITEE - Co-Author** | ​07/2018 - 05/2019 |
-| --- | --- |
-
+**PAPER - "An Innovative Model-Based Approach for Credit Card Fraud Detection Using Predictive Analysis and Logical Regression", IJITEE - Co-Author** 07/2018 - 05/2019
 - Used predictive analysis, logistic regression, outlier model, custom rule management and global profiling to build a 5-stage verification model to prevent fraudulent transactions.
 
-![](RackMultipart20201125-4-j2stgb_html_d052ea2f3dd9ffd6.png)
-
-**TECHNICAL SKILLS**
+## **TECHNICAL SKILLS**
 
 - Languages and Skills: C/C++, Java, Hadoop, Python, R, SAS
 
