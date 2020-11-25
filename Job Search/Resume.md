@@ -9,23 +9,18 @@
 
 ## **EMPLOYMENT HISTORY**
 
-Office of the Vice President for Communications and Marketing, Indiana University09/2020 - Present
-
+Office of the Vice President for Communications and Marketing, Indiana University  09/2020 - Present
 **Marketing Data Analyst**
 
 - Support the usage of Salesforce Marketing Cloud through audience segmentation and campaign management and translate plain language requests into reports from CRM and SQL queries.
 
-| AIVIS.AI (Milpitas, CA)(Remote) | 06/2020 - 08/2020 |
-| --- | --- |
-| **Data Science Intern** |
- |
+AIVIS.AI (Milpitas, CA)(Remote)  06/2020 - 08/2020 
+**Data Science Intern** 
 
 - Participated in building a machine learning training platform using AIVIS development platform and training modules to demonstrate training and deployment of existing models on cloud and/or edge devices.
 
-| Signer Tech (Hyderabad, India) | 05/2018 - 06/2018 |
-| --- | --- |
-| **Big Data Intern** |
- |
+Signer Tech (Hyderabad, India) 05/2018 - 06/2018 
+**Big Data Intern** 
 
 - Worked on implementing SCD Type-2 using Hadoop Data Vault Modelling Techniques to improve the performance of analytical processes and for faster processing of bulky datasets.
 
