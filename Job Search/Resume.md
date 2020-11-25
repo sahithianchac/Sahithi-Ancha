@@ -9,7 +9,7 @@
 
 ## **EMPLOYMENT HISTORY**
 
-### Office of the Vice President for Communications and Marketing, Indiana University  09/2020 - Present
+#### Office of the Vice President for Communications and Marketing, Indiana University  09/2020 - Present
 **Marketing Data Analyst**
 
 - Support the usage of Salesforce Marketing Cloud through audience segmentation and campaign management and translate plain language requests into reports from CRM and SQL queries.
