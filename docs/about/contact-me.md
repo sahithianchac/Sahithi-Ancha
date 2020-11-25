@@ -1,2 +1,2 @@
 ## You can contact me at 
-[![LinkedIN](docs/about/linkedin.jpg)](https://www.linkedin.com/in/sahithiancha/)
+[![LinkedIN](https://github.com/sahithianchac/learn/blob/main/docs/about/linkedin.jpg)](https://www.linkedin.com/in/sahithiancha/)
