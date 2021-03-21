@@ -1,6 +1,6 @@
 ---
-title: "MiniProject_Group18"
-author: "Humshavarthini Karunanidhi,Sahithi Ancha"
+title: "MiniProject"
+author: "Sahithi Ancha"
 date: "3/8/2020"
 output: html_document
 ---
