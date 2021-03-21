@@ -1,6 +1,6 @@
 ---
 title: "MP2_Initial Submission"
-author: "Humshavarthini Karunanidhi, Sahithi Ancha"
+author: "Sahithi Ancha"
 date: "4/3/2020"
 output:
   html_document: default
