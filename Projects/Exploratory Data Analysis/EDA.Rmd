@@ -1,0 +1,359 @@
+---
+title: "MP2_Initial Submission"
+author: "Humshavarthini Karunanidhi, Sahithi Ancha"
+date: "4/3/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+
+cb_palette <- c( "#CC79A7","#E69F00","#D55E00","#56B4E9", "#009E73","#F0E442","#0072B2","#000000")
+```
+
+####loading the DFP data
+
+```{r}
+DFP = read.csv('DFP_WTHH_release.csv')
+#View(DFP)
+```
+
+####selecting the basic,issue and populism variables from the DFP data
+
+```{r}
+data <- DFP %>% select(ï..rowid,presvote16post,house3,weight_DFP, M4A, GREENJOB, WEALTH,MARLEG,ICE,GUNS,POP_1,POP_2,POP_3)
+#View(data)
+```
+
+####Replacing the '6 (Not Sure)' with NA in issue and populism variables of the data
+
+```{r}
+data$M4A[data$M4A == 6] <- NA
+data$GREENJOB[data$GREENJOB == 6] <- NA
+data$WEALTH[data$WEALTH == 6] <- NA
+data$MARLEG[data$MARLEG == 6] <- NA
+data$ICE[data$ICE == 6] <- NA
+data$GUNS[data$GUNS == 6] <- NA
+data$POP_1[data$POP_1 == 6] <- NA
+data$POP_2[data$POP_2 == 6] <- NA
+data$POP_3[data$POP_3 == 6] <- NA
+```
+
+####creating subsets from the data
+
+```{r}
+data$LoyalDemocrats <- ifelse(data$presvote16post == 1 & data$house3 == 1, 1, 0)
+data$LoyalRepublicans <- ifelse(data$presvote16post == 2 & data$house3 == 2, 1, 0)
+data$SwingVoters <- ifelse(data$LoyalDemocrats == 0 & data$LoyalRepublicans == 0, 1, 0)
+data$SwitchtoD <- ifelse(data$presvote16post != 1 & data$house3 == 1, 1, 0)
+data$SwitchtoR <- ifelse(data$presvote16post != 2 & data$house3 == 2, 1, 0)
+#View(data)
+```
+
+
+## 1) How do Switch to D and Switch to R voters differ on the issue variables?
+
+####filtering and gathering the data for switchtoD and switchtoR subsets
+
+```{r}
+SwitchtoD_filtered <- data %>% filter(SwitchtoD == 1)
+SwitchtoD_long = SwitchtoD_filtered %>% pivot_longer(c("M4A", "GREENJOB","WEALTH","MARLEG","ICE","GUNS"), names_to ="Issue_Variable", values_to = "Scale")
+#View(SwitchtoD_long)
+SwitchtoR_filtered <- data %>% filter(SwitchtoR == 1) 
+SwitchtoR_long <- SwitchtoR_filtered %>% pivot_longer(c("M4A", "GREENJOB","WEALTH","MARLEG","ICE","GUNS"), names_to ="Issue_Variable", values_to = "Scale")
+#View(SwitchtoR_long)
+```
+
+####combining the two subsets into a single dataframe
+
+```{r}
+Switches_Subset_Combined <- bind_rows(SwitchtoD_long,SwitchtoR_long)
+Switches_Subset_Combined = Switches_Subset_Combined[!is.na(Switches_Subset_Combined$Scale), ]
+#View(Switches_Subset_Combined)
+```
+
+```{r}
+switchtoD_subset = Switches_Subset_Combined %>% select(weight_DFP,SwitchtoD,Issue_Variable,Scale)
+View(switchtoD_subset)
+switchtoD_subset.weighted_avg = switchtoD_subset %>% group_by(Issue_Variable,Scale) %>% summarise(Weighted_Average = sum(SwitchtoD*weight_DFP))
+SwitchtoD_weighted = mutate(switchtoD_subset.weighted_avg,Subset="SwitchtoD")
+
+switchtoR_subset = Switches_Subset_Combined %>% select(weight_DFP,SwitchtoR,Issue_Variable,Scale)
+switchtoR_subset.weighted_avg = switchtoR_subset %>% group_by(Issue_Variable,Scale) %>% summarise(Weighted_Average = sum(SwitchtoR*weight_DFP))
+SwitchtoR_weighted = mutate(switchtoR_subset.weighted_avg,Subset="SwitchtoR")
+
+switches_weighted <- bind_rows(SwitchtoD_weighted,SwitchtoR_weighted)
+#View(switches_weighted)
+```
+
+####plotting the subsets to study the similarities and differences within the issue variables
+
+```{r}
+ggplot(switches_weighted,aes(x = Scale, y = Weighted_Average, color = Subset)) + geom_point() + geom_smooth()+ facet_wrap(~Issue_Variable) +         ggtitle("Variation on Issue Variables between Switch to D and Switch to R voters",subtitle="Scale ranges from 1 (strongly support) to 5(strongly oppose)")+ 
+    ylab("Weighted Average of the support from voters")+ xlab("Scale of Issue Variables") +
+    scale_color_manual(values = cb_palette,name="Type of Voters", labels=c("Switch to D","Switch to R"))+
+    theme(plot.title = element_text(hjust = 0.5,size = 12, face="bold"))+
+    theme(plot.subtitle = element_text(hjust = 0.5,size = 11))
+```
+
+
+##2)How do swing voters differ from loyal Democrats and loyal Republicans on the issue variables?
+
+####filtering and gathering the data for swing voters,loyal Democrats and loyal Republicans voters
+
+```{r}
+SwingVoters_filtered <- data %>% filter(SwingVoters == 1)
+SwingVoters_long = SwingVoters_filtered %>% pivot_longer(c("M4A", "GREENJOB","WEALTH","MARLEG","ICE","GUNS"), names_to ="Issue_Variable", values_to = "Scale")
+LoyalDemocrats_filtered <- data %>% filter(LoyalDemocrats == 1) 
+LoyalDemocrats_long <- LoyalDemocrats_filtered %>% pivot_longer(c("M4A", "GREENJOB","WEALTH","MARLEG","ICE","GUNS"), names_to ="Issue_Variable", values_to = "Scale")
+LoyalRepublicans_filtered <- data %>% filter(LoyalRepublicans == 1) 
+LoyalRepublicans_long <- LoyalRepublicans_filtered %>% pivot_longer(c("M4A", "GREENJOB","WEALTH","MARLEG","ICE","GUNS"), names_to ="Issue_Variable", values_to = "Scale")
+```
+
+####combining the three subsets into a single dataframe
+
+```{r}
+Subsets_Combined <- bind_rows(SwingVoters_long,LoyalDemocrats_long,LoyalRepublicans_long)
+Subsets_Combined = Subsets_Combined[!is.na(Subsets_Combined$Scale), ]
+#View(Subsets_Combined)
+```
+
+```{r}
+swing_subset = Subsets_Combined %>% select(weight_DFP,SwingVoters,Issue_Variable,Scale)
+swing_subset.weighted_avg = swing_subset %>% group_by(Issue_Variable,Scale) %>% summarise(Weighted_Average = sum(SwingVoters*weight_DFP))
+swing_weighted = mutate(swing_subset.weighted_avg,Subset="SwingVoter")
+
+loyalD_subset = Subsets_Combined %>% select(weight_DFP,LoyalDemocrats,Issue_Variable,Scale)
+loyalD_subset.weighted_avg = loyalD_subset %>% group_by(Issue_Variable,Scale) %>% summarise(Weighted_Average = sum(LoyalDemocrats*weight_DFP))
+loyalD_weighted = mutate(loyalD_subset.weighted_avg,Subset="LoyalDemocrats")
+
+loyalR_subset = Subsets_Combined %>% select(weight_DFP,LoyalRepublicans,Issue_Variable,Scale)
+loyalR_subset.weighted_avg = loyalR_subset %>% group_by(Issue_Variable,Scale) %>% summarise(Weighted_Average = sum(LoyalRepublicans*weight_DFP))
+loyalR_weighted = mutate(loyalR_subset.weighted_avg,Subset="LoyalRepublicans")
+
+voters_weighted <- bind_rows(swing_weighted,loyalD_weighted,loyalR_weighted)
+#View(voters_weighted)
+```
+
+####plotting the subsets to study the similarities and differences within the issue variables
+
+```{r}
+ggplot(voters_weighted,aes(x = Scale, y = Weighted_Average, color = Subset)) + geom_point() + geom_smooth()+ facet_wrap(~Issue_Variable) +         ggtitle("Issue Variables between Loyal Democrats,Republicans and Swingers",subtitle="Scale ranges from 1 (strongly support) to 5(strongly oppose)")+ 
+    ylab("Weighted Average of the support from voters")+ xlab("Scale of Issue Variables") +
+    scale_color_manual(values = cb_palette,name="Type of Voters", labels=c("Swing Voters","Loyal Democrats","Loyal Republicans"))+
+    theme(plot.title = element_text(hjust = 0.5,size = 14))+
+    theme(plot.subtitle = element_text(hjust = 0.5,size = 12))
+```
+
+
+## 3) What predicts being a swing voter?
+
+#### two models to probabilistically predict whether a registered voter is a swing voter: 
+
+##### model using issue variables as predictors:
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with one predictor
+
+model_1 <- glm(SwingVoters ~ GREENJOB, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with one predictor, we get
+
+dp = predict(model_1, type = "response", newdata = data)
+predmodel_1 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predmodel_1, na.rm = T)
+cat("Accuracy for model with 1 predictor: ", round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with two predictors
+
+model_2 <- glm(SwingVoters ~ GREENJOB + GUNS, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with two predictor, we get
+
+dp = predict(model_2, type = "response", newdata = data)
+predmodel_2 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predmodel_2, na.rm = T)
+cat("Accuracy for model with 2 predictors:" , round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with three predictors
+
+model_3 <- glm(SwingVoters ~ GREENJOB + GUNS + MARLEG, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with three predictors, we get
+
+dp = predict(model_3, type = "response", newdata = data)
+predmodel_3 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predmodel_3, na.rm = T)
+cat("Accuracy for model with 3 predictors:" , round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with four predictors
+
+model_4 <- glm(SwingVoters ~ GREENJOB + GUNS + MARLEG + M4A, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with four predictors, we get
+
+dp = predict(model_4, type = "response", newdata = data)
+predmodel_4 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predmodel_4, na.rm = T)
+cat("Accuracy for model with 4 predictors:" , round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with five predictors
+
+model_5 <- glm(SwingVoters ~ GREENJOB + GUNS + MARLEG + M4A + ICE, family = "binomial",data = data)
+
+# Predicting the training dataset with five predictors, we get
+
+dp = predict(model_5, type = "response", newdata = data)
+predmodel_5 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predmodel_5, na.rm = T)
+cat("Accuracy for model with 5 predictors:" , round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with six predictors
+
+model_6 <- glm(SwingVoters ~ GREENJOB + GUNS + MARLEG + M4A + ICE + WEALTH, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with six predictors, we get
+
+dp = predict(model_6, type = "response", newdata = data)
+predmodel_6 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predmodel_6, na.rm = T)
+cat("Accuracy for model with 6 predictors:" , round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with six predictors
+
+model_7 <- glm(SwingVoters ~ GREENJOB + GUNS + MARLEG + M4A + WEALTH, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with six predictors, we get
+
+dp = predict(model_7, type = "response", newdata = data)
+predmodel_7 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predmodel_7, na.rm = T)
+cat("Accuracy for model with 5 predictors:" , round((acc*100),2),"%")
+```
+
+There is no change in accuracy when the variable ICE is removed. We can conclude from this that ICE is not a very important predictor when trying to predict a swing voter.
+
+Among all of the first six models, the model with all six issue varibles performs the best with the highest accuracy.
+
+**Plot for Issue Variables**
+
+When we plot the probability using the issue variables, the other variable values are set to the median value of the sequence.
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+val = seq(1, 10)
+
+swing_M4A = expand.grid(M4A = val, GREENJOB = 5, WEALTH = 5, MARLEG = 5, ICE = 5, GUNS = 5)
+swing_M4A_pred = predict(model_6, type = "response", newdata = swing_M4A)
+
+swing_GREENJOB = expand.grid(M4A = 5, GREENJOB = val, WEALTH = 5, MARLEG = 5, ICE = 5, GUNS = 5)
+swing_GREENJOB_pred = predict(model_6, type = "response", newdata = swing_GREENJOB)
+
+swing_WEALTH = expand.grid(M4A = 5, GREENJOB = 5, WEALTH = val, MARLEG = 5, ICE = 5, GUNS = 5)
+swing_WEALTH_pred = predict(model_6, type = "response", newdata = swing_WEALTH)
+
+swing_MARLEG = expand.grid(M4A = 5, GREENJOB = 5, WEALTH = 5, MARLEG = val, ICE = 5, GUNS = 5)
+swing_MARLEG_pred = predict(model_6, type = "response", newdata = swing_MARLEG)
+
+swing_ICE = expand.grid(M4A = 5, GREENJOB = 5, WEALTH = 5, MARLEG = 5, ICE = val, GUNS = 5)
+swing_ICE_pred = predict(model_6, type = "response", newdata = swing_ICE)
+
+swing_GUNS = expand.grid(M4A = 5, GREENJOB = 5, WEALTH = 5, MARLEG = 5, ICE = 5, GUNS = val)
+swing_GUNS_pred = predict(model_6, type = "response", newdata = swing_GUNS)
+
+swing = data.frame(variables = rep(c("M4A", "GREENJOB", "WEALTH", "MARLEG", "ICE", "GUNS"), each = 10), support = val, prob = c(as.vector(swing_M4A_pred), as.vector(swing_GREENJOB_pred),  as.vector(swing_WEALTH_pred), as.vector(swing_MARLEG_pred), as.vector(swing_ICE_pred), as.vector(swing_GUNS_pred)))
+
+ggplot(swing, aes(x = support, y = prob, group = variables)) + geom_line() + facet_wrap(~variables) + labs(title = 'Plot for issue variables') + xlab('Probability of being a Swing Voter based on issue variables') + ylab('Swing Probability') 
+```
+
+From the above graphs, we can see how each variable affects the probability of being a swing voter. It is evident that the variable GREENJOB has the highest affect whereas WEALTH is the least affecting factor. Supporting GREENJOB, GUNS and M4A make a voter less likely to be a swing voter, whereas supporting ICE, MARLEG and WEALTH make them more likely to be a swing voter.
+
+
+##### Model using populism variables as predictors
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with one variable
+
+pmodel_1 <- glm(SwingVoters ~ POP_1, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with one variable, we get
+
+dp = predict(pmodel_1, type = "response", newdata = data)
+predpmodel_1 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predpmodel_1, na.rm = T)
+cat("Accuracy for model with 1 predictor:", round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with two variables
+
+pmodel_2 <- glm(SwingVoters ~ POP_1 + POP_2, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with two variable, we get
+
+dp = predict(pmodel_2, type = "response", newdata = data)
+predpmodel_2 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predpmodel_2, na.rm = T)
+cat("Accuracy for model with 2 predictors:" , round((acc*100),2),"%")
+```
+
+```{r warning=FALSE, message=FALSE, echo = FALSE}
+# Model with three variables
+
+pmodel_3 <- glm(SwingVoters ~ POP_1 + POP_2 + POP_3, family = "quasibinomial", weights = weight_DFP, data = data)
+
+# Predicting the training dataset with three variable, we get
+
+dp = predict(pmodel_3, type = "response", newdata = data)
+predpmodel_3 <- ifelse(dp > 0.5, 1, 0)
+acc <- mean(data$SwingVoters == predpmodel_3, na.rm = T)
+cat("Accuracy for model with 3 predictors:" , round((acc*100),2),"%")
+```
+
+The increase in accuracy when compared to the previous mode is 0.15%
+
+Among these three models, the model with all the three populism variables is the best as it has the highest accuracy for the training dataset.
+
+When the two models, *Model with issue variables* and *Model with populism variables* are considered, the former performs better with a higher train accuracy.
+
+
+**Plot for Populism Variables**
+
+When we plot the probability using the populism variables, the other variable values are set to the median value of the sequence.
+
+```{r warning=FALSE, message=FALSE, echo=FALSE}
+val = seq(1, 10)
+
+swing_pop1 = expand.grid(POP_1 = val, POP_2 = 5, POP_3 = 5)
+swing_pop1_pred = predict(pmodel_3, type = "response", newdata = swing_pop1)
+
+swing_pop2 = expand.grid(POP_1 = 5, POP_2 = val, POP_3 = 5)
+swing_pop2_pred = predict(pmodel_3, type = "response", newdata = swing_pop2)
+
+swing_pop3 = expand.grid(POP_1 = 5, POP_2 = 5, POP_3 = val)
+swing_pop3_pred = predict(pmodel_3, type = "response", newdata = swing_pop3)
+
+swing = data.frame(variables = rep(c("POP_1", "POP_2", "POP_3"), each = 10), support = val, prob = c(as.vector(swing_pop1_pred), as.vector(swing_pop2_pred),  as.vector(swing_pop3_pred)))
+
+ggplot(swing, aes(x = support, y = prob, group = variables)) + geom_line() + facet_wrap(~variables) + labs(title = 'Plot for populism variables') + xlab('Probability of being a Swing Voter based on populism variables') + ylab('Swing Probability') 
+```
+
+From the above graphs, we can see how each variable affects the probability of being a swing voter. In this case, it is evident that the variable POP_1 has the highest affect whereas POP_2 is the least affecting factor. In this case, support for POP_1 and POP_2 implies that they are more likely to be swing voters, whereas, the vice-versa is true for the POP_3 variable. 
+
+To best predict the swing voter, the model with all six issue variables and the model with all three populism variables should be used since they have the highest accuracy.
