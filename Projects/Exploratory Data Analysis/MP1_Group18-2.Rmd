@@ -1,0 +1,311 @@
+---
+title: "MiniProject_Group18"
+author: "Humshavarthini Karunanidhi,Sahithi Ancha"
+date: "3/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Install Libraries
+```{r}
+library(tidyr)
+library(tidyverse)
+library(tidycensus)
+library(rio)
+library(ggplot2)
+library(stringr)
+library(MASS)
+census_api_key("74ac843b8e32ef41db922de636e1019a44eb0677",install = TRUE,overwrite=TRUE)
+cb_palette = c("#999999", "#E69F00", "#56B4E9", "#009E73","#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+```
+
+#loading data
+```{r}
+hpi = import("State_and_US_SA.xls")
+Cpi = read_csv("cpi.csv")
+latest_population = read_csv("nst-est2018-alldata.csv")
+land.area = read_csv("land_area.csv")
+state_codes = read_delim("state_abbrevs.txt", delim = " ")
+```
+## House prices over time
+```{r}
+Data.Imp = Data[6:545, 1:52]
+names(Data.Imp) = Data[5,1:52]
+Data.piv.long = pivot_longer(Data.Imp, -Month, names_to = "States", values_to = "Values")
+Data.piv.long$Values = as.numeric(Data.piv.long$Values)
+Data.piv.long = Data.piv.long %>% group_by(Month) %>% summarise(Values = mean(Values))
+Cpi$YP = paste(Cpi$Year,Cpi$Period, sep = "")
+Data.piv.long = merge(Data.piv.long, 
+                      data.frame(YP = Cpi$YP, cpi = Cpi$Value),
+                      by.x = "Month", by.y = "YP")
+
+dec_2000_cpi = Cpi$Value[Cpi$Label == "2000 Dec"] #Dec 2000 cpi will be used for adjusting inflation
+Data.piv.long$real_values = Data.piv.long$Values/Data.piv.long$cpi * dec_2000_cpi
+Data.piv.long$Year = str_extract(Data.piv.long$Month, "[:digit:][:digit:][:digit:][:digit:]")
+Data.piv.long$Month = NULL
+Data.piv.long = Data.piv.long %>% group_by(Year) %>% summarise(real_values = mean(real_values))
+
+
+ggplot(Data.piv.long, aes(x = Year, y = real_values)) + geom_point() + theme(axis.text.x = element_text(angle = 90, hjust = 1))+
+  xlab("Years") + ylab("Means of HPI of all states") +
+  ggtitle("Real House Price Index Vs Year",subtitle="Between years 1975 and 2019")
+```
+```{r}
+Cpi$`Series ID` = NULL
+Cpi$Year = NULL
+Cpi$Period = NULL
+Cpi$Label = NULL
+Data.Imp.merge = merge(Data.Imp, Cpi, by.x = "Month", by.y = "YP")
+Data.Imp.merge$Year = str_extract(Data.Imp.merge$Month, "[:digit:][:digit:][:digit:][:digit:]")
+Data.Imp.merge$Month = NULL
+Data.Imp.merge = as.data.frame(lapply(Data.Imp.merge, as.numeric))
+Data.Imp.merge.cpi =  (Data.Imp.merge[,(1:51)]/Data.Imp.merge[,52]) * dec_2000_cpi
+Data.Imp.merge.cpi$Year = Data.Imp.merge$Year
+```
+
+```{r}
+Data.mean = aggregate(.~Year, data = Data.Imp.merge.cpi, mean)
+Data.long = pivot_longer(Data.mean, -Year, names_to = "States", values_to = "Means")
+Data.long.merge = merge(Data.long, statecodereg, by.x = "States", by.y = "Code")
+```
+
+```{r}
+ggplot(Data.long.merge, aes(x = Year, y = Means)) + geom_point() + 
+  geom_smooth(method = "lm", color = "darkgoldenrod1")+
+  xlab("Years from 1975 to 2019") + ylab("Means of HPI of all states") +
+  ggtitle("Real House Price Index of Each State Vs Year", subtitle = "HPI is adjusted to Dec 2000 price value") +
+  facet_wrap(~State, ncol = 6) + 
+  theme(axis.text.x =element_text(size = 5),
+        axis.text.y =element_text(size = 6),
+        strip.text.x =element_text(size = 8)) 
+```
+
+```{r}
+Data.mean.region = aggregate(Data.long.merge[,(3)], list(Data.long.merge$Region,Data.long.merge$Year), mean)
+names(Data.mean.region) = c("Region","Year","Means")
+```
+
+```{r}
+ggplot(Data.mean.region, aes(x = Year, y = Means)) + geom_point() + 
+  geom_smooth(method = "lm", color = "darkgoldenrod1", se = FALSE)+
+  xlab("Years") + ylab("Means of HPI over each Region") +
+  ggtitle("Change in HPI Index Vs Each Region",subtitle="Between years 1975 and 2019")+
+  facet_wrap(~Region)
+
+ggplot(Data.mean.region, aes(x = Year, y = Means, color = Region)) + geom_line() + 
+  xlab("Years") + ylab("Means of HPI over each Region") +
+  ggtitle("Change in HPI Index Vs Each Region",subtitle="Between years 1975 and 2019") +
+  scale_color_manual(values = cb_palette)
+```
+
+## Population density and changes in house prices
+
+```{r}
+hpi.1975 = subset(Data.mean, Year == 1975)
+hpi.2019 = subset(Data.mean, Year == 2019)
+hpi.1975.long = pivot_longer(hpi.1975, -Year, names_to = "States", values_to = "Means1975")
+hpi.2019.long = pivot_longer(hpi.2019, -Year, names_to = "States", values_to = "Means2019")
+hpi.merge = merge(hpi.1975.long,hpi.2019.long, by.x = "States", by.y = "States")
+hpi.merge$MeanChange = ((hpi.merge$Means2019 - hpi.merge$Means1975)/hpi.merge$Means1975) * 100
+land.area.merge =  merge(land.area,statecodereg, by.x = "State Code", by.y = "State")
+final.data =  merge(land.area.merge,hpi.merge, by.x = "Code", by.y = "States")
+```
+
+```{r}
+ggplot(final.data, aes(x = Density, y = MeanChange)) + geom_point() + 
+  ggtitle("Change in HPI with respect to Population Density") +
+  xlab("Population Density of States") +
+  ylab("Change in HPI values (in %)")
+```
+
+
+
+```{r}
+final.data1 <-final.data[!(final.data$Density > 1250),]
+ggplot(final.data1, aes(x = Density, y = MeanChange)) + geom_point() + geom_smooth(method = "rlm",se = F,col = "darkgoldenrod1")+
+  ggtitle("Change in HPI with respect to Population Density") +
+  xlab("Population Density of States") + 
+  ylab("Change in HPI values (in %)") +
+  scale_color_manual(values = cb_palette)
+```
+```{r}
+data.region = final.data1[c("Region","Density","MeanChange")]
+data.region.mean = aggregate(.~Region, data = data.region, mean)
+```
+
+```{r}
+ggplot(data.region, aes(x = Density, y = MeanChange)) + geom_point() + 
+  geom_smooth(method = "rlm",se = F, col = "darkgoldenrod1") +
+  facet_wrap(~Region) +
+  ggtitle("Change in HPI with respect to Population Density conditioned on Regions") +
+  xlab("Population Density of States") + 
+  ylab("Change in HPI values (in %)") +
+  scale_color_manual(values = cb_palette)
+```
+
+## Changes in population and changes in house prices:
+
+```{r}
+hpi = import("State_and_US_SA.xls")
+Cpi = read_csv("cpi.csv")
+state_codes = read_delim("state_abbrevs.txt", delim = " ")
+latest_population = read_csv("nst-est2018-alldata.csv")
+
+hpi.data = hpi[6:545, 1:52]
+#View(hpi.data)
+names(hpi.data) = hpi[5,1:52]
+
+Cpi$YP = paste(Cpi$Year,Cpi$Period, sep = "")
+Cpi$`Series ID` = NULL
+Cpi$Year = NULL
+Cpi$Period = NULL
+Cpi$Label = NULL
+hpi.data.merge = merge(hpi.data, Cpi, by.x = "Month", by.y = "YP")
+
+
+hpi.data.merge$Year = str_extract(hpi.data.merge$Month, "^[0-9]+")
+hpi.data.merge$Month = NULL
+hpi.data.merge = as.data.frame(lapply(hpi.data.merge, as.numeric))
+
+dec_2000_cpi = Cpi$Value[Cpi$Label == "2000 Dec"] #Dec 2000 cpi will be used for adjusting inflation
+hpi.data.merge.cpi =  (hpi.data.merge[,(1:51)]/hpi.data.merge[,52]) * dec_2000_cpi
+#hpi.data.merge.cpi$Year = hpi.data.merge$Year
+
+data.mean = aggregate(.~Year, data = hpi.data.merge, mean)
+data.long = pivot_longer(data.mean, -Year, names_to = "States", values_to = "Means")
+data.merge = merge(data.long, state_codes, by.x = "States", by.y = "Code")
+names(data.merge)[names(data.merge) == "States"] <- "Code"
+data.merge = data.merge[,c('State','Code','Region','Year','Means')]
+```
+
+#Preparing Population data
+
+```{r}
+population1990 <- get_decennial(geography = "state", variables = "P0010001", year = 1990)
+population2000 <- get_decennial(geography = "state", variables = "P001001", year = 2000)
+population2010 <- get_decennial(geography = "state", variables = "P001001", year = 2010)
+
+population2018 <- data.frame(latest_population['NAME'],latest_population['POPESTIMATE2018'])
+population2018 <- population2018[6:57,]
+names(population2018)[names(population2018) == "NAME"] <- "State"
+names(population2018)[names(population2018) == "POPESTIMATE2018"] <- "POP2018"
+
+population <- data.frame(population1990[1:51,2],population1990[1:51,4],population2000[1:51,4],population2010[1:51,4])
+
+names(population) <- c('State','POP1990','POP2000','POP2010')
+population = left_join(population, population2018, by = "State")
+population = left_join(population, state_codes, by = "State")
+
+population = population[,c('State','Code','Region','POP1990','POP2000','POP2010','POP2018')]
+```
+#Calculating percentage change for time period 1990 to 2000
+```{r}
+a1 = filter(data.merge,Year=='1990')
+a2 = filter(data.merge,Year=='2000')
+
+HPI_Change1 = ((a2$Means - a1$Means)/a1$Means)*100
+Change_in_time_period1.df = data.frame(a1['State'],a1['Code'],a1['Region'],HPI_Change1)
+
+POP_Change1 = ((population$POP2000 - population$POP1990)/population$POP1990)*100
+POP_Change1.df = data.frame(population['State'],POP_Change1)
+
+Change_in_time_period1 = left_join(Change_in_time_period1.df, POP_Change1.df, by = "State")
+```
+
+#Calculating percentage change for time period 2000 to 2010
+
+```{r}
+a3 = filter(data.merge,Year=='2010')
+
+HPI_Change2 = ((a3$Means - a2$Means)/a2$Means)*100
+Change_in_time_period2.df = data.frame(a2['State'],a2['Code'],a2['Region'],HPI_Change2)
+
+POP_Change2 = ((population$POP2010 - population$POP2000)/population$POP2000)*100
+POP_Change2.df = data.frame(population['State'],POP_Change2)
+
+Change_in_time_period2 = left_join(Change_in_time_period2.df, POP_Change2.df, by = "State")
+```
+
+#Calculating percentage change for time period 2010 to 2018
+
+```{r}
+a4 = filter(data.merge,Year=='2018')
+
+HPI_Change3 = ((a4$Means - a3$Means)/a3$Means)*100
+Change_in_time_period3.df = data.frame(a3['State'],a3['Code'],a3['Region'],HPI_Change3)
+
+POP_Change3 = ((population$POP2018 - population$POP2010)/population$POP2010)*100
+POP_Change3.df = data.frame(population['State'],POP_Change3)
+
+Change_in_time_period3 = left_join(Change_in_time_period3.df, POP_Change3.df, by = "State")
+```
+
+
+#Plotting the graphs to study the relationship between change in population and change in house price index
+
+```{r}
+ggplot(Change_in_time_period1,aes(x=POP_Change1,y=HPI_Change1))+geom_point()+
+  geom_smooth(method = "lm", se = FALSE,color = "orange")+
+  #geom_smooth(method = "loess", se = FALSE,color = "green")+
+  #geom_smooth(method = "gam", formula = y ~ s(x), se = FALSE, col = "red")+
+  scale_x_log10()+scale_y_log10()+
+  xlab("Percentage change in population")+
+  ylab("Percentage change in house price")+
+  ggtitle("Relationship between population change and house price change",subtitle="Years 1990 - 2000")
+
+
+ggplot(Change_in_time_period2,aes(x=POP_Change2,y=HPI_Change2))+geom_point()+
+  geom_smooth(method = "lm", se = FALSE,color = "orange")+
+  #geom_smooth(method = "loess", se = FALSE,color = "green")+
+  #geom_smooth(method = "gam", formula = y ~ s(x), se = FALSE, col = "red")+
+  scale_x_log10()+scale_y_log10()+
+  xlab("Percentage change in population")+
+  ylab("Percentage change in house price")+
+  ggtitle("Relationship between population change and house price change",subtitle="Years 2000 - 2010")
+
+ggplot(Change_in_time_period3,aes(x=POP_Change3,y=HPI_Change3))+geom_point()+
+  geom_smooth(method = "lm", se = FALSE,color = "orange")+
+  #geom_smooth(method = "loess", se = FALSE,color = "green")+
+  #geom_smooth(method = "gam", formula = y ~ s(x), se = FALSE, col = "red")+
+  scale_x_log10()+scale_y_log10()+
+  xlab("Percentage change in population")+
+  ylab("Percentage change in house price")+
+  ggtitle("Relationship between population change and house price change",subtitle="Years 2010 - 2018")
+
+```
+
+
+```{r}
+ggplot(Change_in_time_period1,aes(x=POP_Change1,y=HPI_Change1))+geom_point()+
+  scale_x_log10()+scale_y_log10()+
+  facet_grid(~Region)+
+  geom_smooth(method = "lm", se = FALSE,color = "orange")+
+  xlab("Percentage change in population")+
+  ylab("Percentage change in house price")+
+  ggtitle("Relationship between population change and house price change over regions",subtitle="Years 1990 - 2000")
+
+
+ggplot(Change_in_time_period2,aes(x=POP_Change2,y=HPI_Change2))+geom_point()+
+  scale_x_log10()+scale_y_log10()+
+  facet_grid(~Region)+
+  geom_smooth(method = "lm", se = FALSE,color = "orange")+
+  xlab("Percentage change in population")+
+  ylab("Percentage change in house price")+
+  ggtitle("Relationship between population change and house price change over regions",subtitle="Years 2000 - 2010")
+
+
+ggplot(Change_in_time_period3,aes(x=POP_Change3,y=HPI_Change3))+geom_point()+
+  scale_x_log10()+scale_y_log10()+
+  facet_grid(~Region)+
+  geom_smooth(method = "lm", se = FALSE,color = "orange")+
+  xlab("Percentage change in population")+
+  ylab("Percentage change in house price")+
+  ggtitle("Relationship between population change and house price change over regions",subtitle="Years 2010 - 2018")
+
+```
+
+
+
